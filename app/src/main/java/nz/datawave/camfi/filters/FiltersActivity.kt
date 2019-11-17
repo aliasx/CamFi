@@ -85,8 +85,8 @@ class FiltersActivity : AppCompatActivity() {
     }
 
     private fun createFilteredThumbs(bitmap: Bitmap): ArrayList<Bitmap> {
-        var res: ArrayList<Bitmap> = ArrayList()
-        var resizedBitmap = bitmap.resize(THUMB_SIZE)
+        val res: ArrayList<Bitmap> = ArrayList()
+        val resizedBitmap = bitmap.resize(THUMB_SIZE)
         res.add(resizedBitmap)
         res.add(resizedBitmap.changeColor())
         res.add(resizedBitmap.invertColor())

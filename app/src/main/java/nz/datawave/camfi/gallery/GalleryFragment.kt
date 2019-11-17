@@ -1,6 +1,7 @@
 package nz.datawave.camfi.gallery
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -22,7 +23,7 @@ import nz.datawave.camfi.INTENT_IMAGE_PATH
 import nz.datawave.camfi.filters.FiltersActivity
 
 class GalleryFragment: Fragment(){
-    var click: Subject<String> = PublishSubject.create()
+    private var click: Subject<String> = PublishSubject.create()
 
     companion object {
         fun newInstance(): GalleryFragment {
@@ -55,6 +56,7 @@ class GalleryFragment: Fragment(){
             initGallery()
     }
 
+    @SuppressLint("CheckResult")
     private fun initGallery() {
         click.subscribe(this::onSelectImage)
         gallery.layoutManager = StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL)

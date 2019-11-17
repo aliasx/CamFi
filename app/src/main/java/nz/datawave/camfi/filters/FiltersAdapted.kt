@@ -29,6 +29,6 @@ class FilterAdapter(
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val imageView = view.imageView
+        val imageView = view.imageView!!
     }
 }

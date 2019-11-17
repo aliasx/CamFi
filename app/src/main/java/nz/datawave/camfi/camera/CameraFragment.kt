@@ -42,11 +42,11 @@ import nz.datawave.camfi.REQUEST_CAMERA_PERMISSION
 import nz.datawave.camfi.extensions.showToast
 import nz.datawave.camfi.filters.FiltersActivity
 import java.io.File
-import java.util.Arrays
 import java.util.Collections
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
+import kotlin.math.max
 
 class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -210,19 +210,19 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
 
         private fun capturePicture(result: CaptureResult) {
             val afState = result.get(CaptureResult.CONTROL_AF_STATE)
-            if (afState == null) {
+            if (afState == null)
                 captureStillPicture()
-            } else if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED
+            else if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED
                 || afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
                 // CONTROL_AE_STATE can be null on some devices
                 val aeState = result.get(CaptureResult.CONTROL_AE_STATE)
                 if (aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
                     state = STATE_PICTURE_TAKEN
                     captureStillPicture()
-                } else {
+                } else
                     runPrecaptureSequence()
-                }
-            }
+            }else
+                runPrecaptureSequence()
         }
 
         override fun onCaptureProgressed(session: CameraCaptureSession,
@@ -320,7 +320,7 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
 
                 // For still image captures, we use the largest available size.
                 val largest = Collections.max(
-                    Arrays.asList(*map.getOutputSizes(ImageFormat.JPEG)),
+                    mutableListOf(*map.getOutputSizes(ImageFormat.JPEG)),
                     CompareSizesByArea())
                 imageReader = ImageReader.newInstance(largest.width, largest.height,
                     ImageFormat.JPEG, /*maxImages*/ 2).apply {
@@ -457,7 +457,7 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
      */
     private fun startBackgroundThread() {
         backgroundThread = HandlerThread("CameraBackground").also { it.start() }
-        backgroundHandler = Handler(backgroundThread?.looper)
+        backgroundHandler = Handler(backgroundThread!!.looper)
     }
 
     /**
@@ -495,7 +495,8 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
             previewRequestBuilder.addTarget(surface)
 
             // Here, we create a CameraCaptureSession for camera preview.
-            cameraDevice?.createCaptureSession(Arrays.asList(surface, imageReader?.surface),
+            cameraDevice?.createCaptureSession(
+                mutableListOf(surface, imageReader?.surface),
                 object : CameraCaptureSession.StateCallback() {
 
                     override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
@@ -550,7 +551,7 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
 
         if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
-            val scale = Math.max(
+            val scale = max(
                 viewHeight.toFloat() / previewSize.height,
                 viewWidth.toFloat() / previewSize.width)
             with(matrix) {
@@ -673,7 +674,7 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
          * Conversion from screen rotation to JPEG orientation.
          */
         private val ORIENTATIONS = SparseIntArray()
-        private val FRAGMENT_DIALOG = "dialog"
+        private const val FRAGMENT_DIALOG = "dialog"
 
         init {
             ORIENTATIONS.append(Surface.ROTATION_0, 90)
@@ -685,42 +686,42 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
         /**
          * Tag for the [Log].
          */
-        private val TAG = "CameraFragment"
+        private const val TAG = "CameraFragment"
 
         /**
          * Camera state: Showing camera preview.
          */
-        private val STATE_PREVIEW = 0
+        private const val STATE_PREVIEW = 0
 
         /**
          * Camera state: Waiting for the focus to be locked.
          */
-        private val STATE_WAITING_LOCK = 1
+        private const val STATE_WAITING_LOCK = 1
 
         /**
          * Camera state: Waiting for the exposure to be precapture state.
          */
-        private val STATE_WAITING_PRECAPTURE = 2
+        private const val STATE_WAITING_PRECAPTURE = 2
 
         /**
          * Camera state: Waiting for the exposure state to be something other than precapture.
          */
-        private val STATE_WAITING_NON_PRECAPTURE = 3
+        private const val STATE_WAITING_NON_PRECAPTURE = 3
 
         /**
          * Camera state: Picture was taken.
          */
-        private val STATE_PICTURE_TAKEN = 4
+        private const val STATE_PICTURE_TAKEN = 4
 
         /**
          * Max preview width that is guaranteed by Camera2 API
          */
-        private val MAX_PREVIEW_WIDTH = 1920
+        private const val MAX_PREVIEW_WIDTH = 1920
 
         /**
          * Max preview height that is guaranteed by Camera2 API
          */
-        private val MAX_PREVIEW_HEIGHT = 1080
+        private const val MAX_PREVIEW_HEIGHT = 1080
 
         /**
          * Given `choices` of `Size`s supported by a camera, choose the smallest one that
@@ -766,13 +767,13 @@ class CameraFragment : Fragment(), View.OnClickListener, ActivityCompat.OnReques
 
             // Pick the smallest of those big enough. If there is no one big enough, pick the
             // largest of those not big enough.
-            if (bigEnough.size > 0) {
-                return Collections.min(bigEnough, CompareSizesByArea())
-            } else if (notBigEnough.size > 0) {
-                return Collections.max(notBigEnough, CompareSizesByArea())
-            } else {
-                Log.e(TAG, "Couldn't find any suitable preview size")
-                return choices[0]
+            return when {
+                bigEnough.size > 0 -> Collections.min(bigEnough, CompareSizesByArea())
+                notBigEnough.size > 0 -> Collections.max(notBigEnough, CompareSizesByArea())
+                else -> {
+                    Log.e(TAG, "Couldn't find any suitable preview size")
+                    choices[0]
+                }
             }
         }
 

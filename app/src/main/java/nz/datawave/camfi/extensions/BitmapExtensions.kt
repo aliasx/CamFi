@@ -1,24 +1,10 @@
 package nz.datawave.camfi.extensions
 
 import android.content.Context
-import android.content.ContextWrapper
 import android.graphics.*
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import nz.datawave.camfi.R
-import android.content.Intent
-import android.net.Uri
-import android.os.Environment
-import androidx.core.content.FileProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import nz.datawave.camfi.BuildConfig
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-
 
 fun Bitmap.changeColor():Bitmap {
 
@@ -83,7 +69,12 @@ fun Bitmap.balloons(context: Context): Bitmap {
     val canvas = Canvas(res)
     var balloons = BitmapFactory.decodeResource(context.resources, R.drawable.balloons)
     val ratio = balloons.height.toFloat() / balloons.width.toFloat()
-    balloons = balloons.resize(this.width, (this.width * ratio).toInt())
+    balloons = Bitmap.createScaledBitmap(
+        balloons,
+        this.width,
+        (this.width * ratio).toInt(),
+        false
+    )
     canvas.drawBitmap(this, Matrix (), null)
     canvas.drawBitmap(balloons, Matrix (), null)
 
@@ -94,44 +85,29 @@ fun Bitmap.frame(context: Context): Bitmap {
     val res = Bitmap.createBitmap(this.width, this.height, this.config)
     val canvas = Canvas(res)
     var balloons = BitmapFactory.decodeResource(context.resources, R.drawable.pencils)
-    balloons = balloons.resize(this.width, this.height)
+    balloons = Bitmap.createScaledBitmap(
+        balloons,
+        this.width,
+        this.height,
+        false
+    )
     canvas.drawBitmap(this, Matrix (), null)
     canvas.drawBitmap(balloons, Matrix (), null)
 
     return res
 }
 
-fun Bitmap.resize(width:Int, height:Int):Bitmap{
-    return Bitmap.createScaledBitmap(
-        this,
-        width,
-        height,
-        false
-    )
-}
+fun Bitmap.resize(size: Int): Bitmap{
+        val width = this.width
+        val height = this.height
+        val ratioBitmap = width.toFloat() / height.toFloat()
+        var finalWidth = size
+        var finalHeight = size
+        if (ratioBitmap < 1)
+            finalWidth = (size.toFloat() * ratioBitmap).toInt()
+        else
+            finalHeight = (size.toFloat() / ratioBitmap).toInt()
 
-fun Bitmap.share(context: Context) {
-    val bitmap = this
-    CoroutineScope(Dispatchers.Main).launch {
-        val uri: Uri? = async(Dispatchers.IO) {
-            val file =
-                File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share.png")
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(file))
-            val uri =
-                FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", file)
+        return Bitmap.createScaledBitmap(this, finalWidth, finalHeight, true)
 
-            return@async uri
-        }.await()
-        try {
-
-            val shareIntent = Intent()
-            shareIntent.action = Intent.ACTION_SEND
-            shareIntent.putExtra(Intent.EXTRA_STREAM, uri)
-            shareIntent.type = "image/jpeg"
-            context.startActivity(Intent.createChooser(shareIntent, "Share"))
-
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-        }
-    }
 }

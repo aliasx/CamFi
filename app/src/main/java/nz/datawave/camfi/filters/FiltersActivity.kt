@@ -1,10 +1,14 @@
 package nz.datawave.camfi.filters
 
+import android.content.Intent
 import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import androidx.core.content.FileProvider
 import androidx.core.graphics.drawable.toBitmap
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.squareup.picasso.Picasso
@@ -16,6 +20,11 @@ import nz.datawave.camfi.*
 import nz.datawave.camfi.extensions.*
 import java.io.File
 import com.squareup.picasso.Callback
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import java.io.FileOutputStream
 import java.lang.Exception
 
 
@@ -35,6 +44,7 @@ class FiltersActivity : AppCompatActivity() {
     private fun initUI(){
         supportActionBar!!.title = "Filters"
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        progressBar.setOnClickListener{}
     }
 
     private fun initPreview() {
@@ -76,7 +86,7 @@ class FiltersActivity : AppCompatActivity() {
 
     private fun createFilteredThumbs(bitmap: Bitmap): ArrayList<Bitmap> {
         var res: ArrayList<Bitmap> = ArrayList()
-        val resizedBitmap = bitmap.resize(THUMB_SIZE, THUMB_SIZE)
+        var resizedBitmap = bitmap.resize(THUMB_SIZE)
         res.add(resizedBitmap)
         res.add(resizedBitmap.changeColor())
         res.add(resizedBitmap.invertColor())
@@ -84,6 +94,31 @@ class FiltersActivity : AppCompatActivity() {
         res.add(resizedBitmap.frame(this))
 
         return res
+    }
+
+
+    private fun share(){
+        CoroutineScope(Dispatchers.Main).launch {
+            progressBar.visibility = View.VISIBLE
+            val intent: Intent? = async(Dispatchers.IO) {
+                val bitmap = imageView.drawable.toBitmap()
+                val file =
+                    File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share.png")
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(file))
+                val uri =
+                    FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", file)
+
+                val intent = Intent()
+                intent.action = Intent.ACTION_SEND
+                intent.putExtra(Intent.EXTRA_STREAM, uri)
+                intent.type = "image/jpeg"
+
+                return@async intent
+            }.await()
+
+            intent?.let { context.startActivity(Intent.createChooser(it, "Share")) }
+            progressBar.visibility = View.GONE
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -99,7 +134,7 @@ class FiltersActivity : AppCompatActivity() {
                 return true
             }
             R.id.action_share -> {
-                imageView.drawable.toBitmap().share(this)
+                share()
                 return true
             }
         }

@@ -7,10 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.item_gallery.view.*
-import com.squareup.picasso.Picasso
 import io.reactivex.subjects.Subject
 import nz.datawave.camfi.R
-import java.io.File
 
 class FilterAdapter(
     private val c: Context,
